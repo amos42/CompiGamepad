@@ -27,29 +27,32 @@
 #define KEYPAD_B      (3)
 #define KEYPAD_X      (4)
 #define KEYPAD_Y      (5)
-#define KEYPAD_L1      (6)
-#define KEYPAD_R1      (7)
+#define KEYPAD_L1     (6)
+#define KEYPAD_R1     (7)
+#define KEYPAD_FN     (9)
 
 #define BUTTON_COUNT   (2+4+2)
 
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
-  BUTTON_COUNT, 0,       // Button Count, Hat Switch Count
+  BUTTON_COUNT + 4 + BUTTON_COUNT, 0,       // Button Count, Hat Switch Count
   true, true, false,     // X and Y, but no Z Axis
   false, false, false,   // No Rx, Ry, or Rz
   false, false,          // No rudder or throttle
   false, false, false);  // No accelerator, brake, or steering
 
-int buttonPort[4+BUTTON_COUNT] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
+int buttonPort[4+BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
                        KEYPAD_START, KEYPAD_SELECT,
                        KEYPAD_A, KEYPAD_B, KEYPAD_X, KEYPAD_Y, 
-                       KEYPAD_L1, KEYPAD_R1 };
+                       KEYPAD_L1, KEYPAD_R1,
+                       KEYPAD_FN};
 // Last state of the buttons
+int lastShiftState[4+BUTTON_COUNT] = {0,};
 int lastButtonState[4+BUTTON_COUNT] = {0,};
 
 
 void setup() {
   // Initialize Button Pins
-  for (int i = 0; i < (4+BUTTON_COUNT); i++){
+  for (int i = 0; i < (4+BUTTON_COUNT+1); i++){
     pinMode(buttonPort[i], INPUT_PULLUP);
   }
 
@@ -66,35 +69,69 @@ void loop() {
   for (int i = 0; i < (4+BUTTON_COUNT); i++)
   {
     int currentButtonState = !digitalRead(buttonPort[i]);
+    int fnButtonState = !digitalRead(KEYPAD_FN);
     if (currentButtonState != lastButtonState[i])
     {
+      int idx = -1;
       switch (i) {
         case 0: // UP
           if (currentButtonState == 1) {
-            Joystick.setYAxis(-1);
+            if(fnButtonState){
+              idx = BUTTON_COUNT+0;
+            } else {
+              Joystick.setYAxis(-1);
+            }
           } else {
-            Joystick.setYAxis(0);
+            if(lastShiftState[i]){
+              idx = BUTTON_COUNT+0;
+            } else {
+              Joystick.setYAxis(0);
+            }
           }
           break;
         case 1: // DOWN
           if (currentButtonState == 1) {
-            Joystick.setYAxis(1);
+            if(fnButtonState){
+              idx = BUTTON_COUNT+1;
+            } else {
+              Joystick.setYAxis(1);
+            }
           } else {
-            Joystick.setYAxis(0);
+            if(lastShiftState[i]){
+              idx = BUTTON_COUNT+1;
+            } else {
+              Joystick.setYAxis(0);
+            }
           }
           break;
         case 2: // LEFT
           if (currentButtonState == 1) {
-            Joystick.setXAxis(-1);
+            if(fnButtonState){
+              idx = BUTTON_COUNT+2;
+            } else {
+              Joystick.setXAxis(-1);
+            }
           } else {
-            Joystick.setXAxis(0);
+            if(lastShiftState[i]){
+              idx = BUTTON_COUNT+2;
+            } else {
+              Joystick.setXAxis(0);
+            }
           }
           break;
         case 3: // RIGHT
           if (currentButtonState == 1) {
-            Joystick.setXAxis(1);
+            if(fnButtonState){
+              idx = BUTTON_COUNT+3;
+            } else {
+              Joystick.setXAxis(1);
+            }
           } else {
-            Joystick.setXAxis(0);
+            if(lastShiftState[i]){
+              idx = BUTTON_COUNT+3;
+            } else {
+              Joystick.setXAxis(0);
+            }
           }
           break;
         case 4: // START
@@ -105,13 +142,27 @@ void loop() {
         case 9: // Y
         case 10: // L1
         case 11: // R1
-          Joystick.setButton(i-4, currentButtonState);
+          idx = i - 4;
           break;
       }
+      
+      if(idx >= 0){
+        if(currentButtonState){
+          if(fnButtonState){
+            if(idx < BUTTON_COUNT) idx += 4+BUTTON_COUNT;
+          }
+        } else {
+          if(lastShiftState[i]){
+            if(idx < BUTTON_COUNT) idx += 4+BUTTON_COUNT;
+          }
+        }
+        Joystick.setButton(idx, currentButtonState);
+      }
+      
+      lastShiftState[i] = fnButtonState;
       lastButtonState[i] = currentButtonState;
     }
   }
 
   delay(10);
 }
-
