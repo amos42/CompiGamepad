@@ -1,21 +1,10 @@
-// Simple gamepad example that demonstraits how to read five Arduino
-// digital pins and map them to the Arduino Joystick library.
-//
-// The digital pins 2 - 6 are grounded when they are pressed.
-// Pin 2 = UP
-// Pin 3 = RIGHT
-// Pin 4 = DOWN
-// Pin 5 = LEFT
-// Pin 6 = FIRE
-//
-// NOTE: This sketch file is for use with Arduino Leonardo and
-//       Arduino Micro only.
-//
-// by Matthew Heironimus
-// 2016-11-24
+//--------------------------------------------------------------------
+// Gamepad for Compi (Amos Ver).
+// 2019-03-27
 //--------------------------------------------------------------------
 
 #include <Joystick.h>
+#include <EEPROM.h>
 
 #define KEYPAD_UP     (10)
 #define KEYPAD_DOWN   (16)
@@ -30,13 +19,15 @@
 #define KEYPAD_L1     (6)
 #define KEYPAD_R1     (7)
 #define KEYPAD_FN     (9)
+#define KEYPAD_ANALOG_X     (A2)
+#define KEYPAD_ANALOG_Y     (A3)
 
 #define BUTTON_COUNT   (2+4+2)
 
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
   BUTTON_COUNT + 4 + BUTTON_COUNT, 0,       // Button Count, Hat Switch Count
   true, true, false,     // X and Y, but no Z Axis
-  false, false, false,   // No Rx, Ry, or Rz
+  true, true, false,   // No Rx, Ry, or Rz
   false, false,          // No rudder or throttle
   false, false, false);  // No accelerator, brake, or steering
 
@@ -49,6 +40,9 @@ int buttonPort[4+BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_
 int lastShiftState[4+BUTTON_COUNT] = {0,};
 int lastButtonState[4+BUTTON_COUNT] = {0,};
 
+int minX, maxX;
+int minY, maxY;
+int anaCalMode = 0;
 
 void setup() {
   // Initialize Button Pins
@@ -56,20 +50,75 @@ void setup() {
     pinMode(buttonPort[i], INPUT_PULLUP);
   }
 
+  // read eeprom
+  char sig[4];
+  for(int i = 0; i < 4; i++){
+    sig[i] = EEPROM.read(i);
+  }
+  if(sig[0] == 'C' && sig[1] == 'A' && sig[2] == 'L' && sig[3] == 'I'){
+    minX = ((int)EEPROM.read(4)) << 8 | (int)EEPROM.read(5);
+    maxX = ((int)EEPROM.read(6)) << 8 | (int)EEPROM.read(7);
+    minY = ((int)EEPROM.read(8)) << 8 | (int)EEPROM.read(9);
+    maxY = ((int)EEPROM.read(10)) << 8 | (int)EEPROM.read(11);
+  } else {
+    minX = 0;
+    maxX = 1023;
+    minY = 0;
+    maxY = 1023;
+  }
+
   // Initialize Joystick Library
   Joystick.begin();
   Joystick.setXAxisRange(-1, 1);
   Joystick.setYAxisRange(-1, 1);
+  Joystick.setRxAxisRange(minX, maxX);
+  Joystick.setRyAxisRange(minY, maxY);
 }
 
 
 void loop() {
+  int fnButtonState = !digitalRead(KEYPAD_FN);
+  int anaX = analogRead(KEYPAD_ANALOG_X);
+  int anaY = analogRead(KEYPAD_ANALOG_Y);
+
+  if(fnButtonState && !digitalRead(KEYPAD_START) && !digitalRead(KEYPAD_SELECT)) {
+    if(!anaCalMode){
+      minX = maxX = anaX;
+      minY = maxY = anaY;
+      anaCalMode = 1;
+    } else {
+      if(anaX < minX) minX = anaX;
+      if(anaX > maxX) maxX = anaX;
+      if(anaY < minY) minY = anaY;
+      if(anaY > maxY) maxY = anaY;
+    }
+    return;
+  } else {
+    if(anaCalMode){
+      Joystick.setRxAxisRange(minX, maxX);
+      Joystick.setRyAxisRange(minY, maxY);
+
+      EEPROM.write(0, 'C');
+      EEPROM.write(1, 'A');
+      EEPROM.write(2, 'L');
+      EEPROM.write(3, 'I');
+      EEPROM.write(4, minX >> 8);
+      EEPROM.write(5, minX & 0xFF);
+      EEPROM.write(6, maxX >> 8);
+      EEPROM.write(7, maxX & 0xFF);
+      EEPROM.write(8, minY >> 8);
+      EEPROM.write(9, minY & 0xFF);
+      EEPROM.write(10, maxY >> 8);
+      EEPROM.write(11, maxY & 0xFF);
+      
+      anaCalMode = 0;
+    }    
+  }
 
   // Read pin values
   for (int i = 0; i < (4+BUTTON_COUNT); i++)
   {
     int currentButtonState = !digitalRead(buttonPort[i]);
-    int fnButtonState = !digitalRead(KEYPAD_FN);
     if (currentButtonState != lastButtonState[i])
     {
       int idx = -1;
@@ -164,5 +213,14 @@ void loop() {
     }
   }
 
-  delay(10);
+  if(true) {
+    if(anaX < minX) anaX = minX;
+    if(anaX > maxX) anaX = maxX;
+    if(anaY < minY) anaY = minY;
+    if(anaY > maxY) anaY = maxY;
+    Joystick.setRxAxis(anaX);
+    Joystick.setRyAxis(anaY);
+  }
+  
+  delay(50);
 }
