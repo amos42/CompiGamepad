@@ -1,6 +1,18 @@
-//--------------------------------------------------------------------
-// Gamepad for Compi (Amos Ver).
-// 2019-03-27
+// Simple gamepad example that demonstraits how to read five Arduino
+// digital pins and map them to the Arduino Joystick library.
+//
+// The digital pins 2 - 6 are grounded when they are pressed.
+// Pin 2 = UP
+// Pin 3 = RIGHT
+// Pin 4 = DOWN
+// Pin 5 = LEFT
+// Pin 6 = FIRE
+//
+// NOTE: This sketch file is for use with Arduino Leonardo and
+//       Arduino Micro only.
+//
+// by Matthew Heironimus
+// 2016-11-24
 //--------------------------------------------------------------------
 
 #include <Joystick.h>
@@ -44,6 +56,11 @@ int minX, maxX;
 int minY, maxY;
 int anaCalMode = 0;
 
+int fnOldButtonState = 0;
+unsigned long lastFnPushTime = 0;
+unsigned long lastFnReleaseTime = 0;
+int fnMultiClickCount = 0;
+
 void setup() {
   // Initialize Button Pins
   for (int i = 0; i < (4+BUTTON_COUNT+1); i++){
@@ -78,23 +95,19 @@ void setup() {
 
 void loop() {
   int fnButtonState = !digitalRead(KEYPAD_FN);
+  unsigned long fnTime = millis();
+  
   int anaX = analogRead(KEYPAD_ANALOG_X);
   int anaY = analogRead(KEYPAD_ANALOG_Y);
 
-  if(fnButtonState && !digitalRead(KEYPAD_START) && !digitalRead(KEYPAD_SELECT)) {
+  if(fnButtonState != fnOldButtonState){
     if(!anaCalMode){
-      minX = maxX = anaX;
-      minY = maxY = anaY;
-      anaCalMode = 1;
+      if(fnButtonState && (fnTime - lastFnReleaseTime) < 700 && fnMultiClickCount >= 2){
+        minX = maxX = anaX;
+        minY = maxY = anaY;
+        anaCalMode = 1;
+      }
     } else {
-      if(anaX < minX) minX = anaX;
-      if(anaX > maxX) maxX = anaX;
-      if(anaY < minY) minY = anaY;
-      if(anaY > maxY) maxY = anaY;
-    }
-    return;
-  } else {
-    if(anaCalMode){
       Joystick.setRxAxisRange(minX, maxX);
       Joystick.setRyAxisRange(minY, maxY);
 
@@ -112,7 +125,31 @@ void loop() {
       EEPROM.write(11, maxY & 0xFF);
       
       anaCalMode = 0;
-    }    
+    }
+    
+    if(fnButtonState){
+      if(fnTime - lastFnReleaseTime < 700){
+        fnMultiClickCount ++;
+      } else {
+        fnMultiClickCount = 0;
+      }
+      lastFnPushTime = fnTime;
+    } else {
+      if(fnTime - lastFnPushTime > 700){
+        fnMultiClickCount = 0;
+      }
+      lastFnReleaseTime = fnTime;
+    }
+    fnOldButtonState = fnButtonState;
+  } else {
+    if(anaCalMode) {
+      if(anaX < minX) minX = anaX;
+      if(anaX > maxX) maxX = anaX;
+      if(anaY < minY) minY = anaY;
+      if(anaY > maxY) maxY = anaY;
+
+      return;
+    }
   }
 
   // Read pin values
