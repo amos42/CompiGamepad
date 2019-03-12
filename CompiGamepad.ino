@@ -1,22 +1,15 @@
-// Simple gamepad example that demonstraits how to read five Arduino
-// digital pins and map them to the Arduino Joystick library.
-//
-// The digital pins 2 - 6 are grounded when they are pressed.
-// Pin 2 = UP
-// Pin 3 = RIGHT
-// Pin 4 = DOWN
-// Pin 5 = LEFT
-// Pin 6 = FIRE
-//
-// NOTE: This sketch file is for use with Arduino Leonardo and
-//       Arduino Micro only.
-//
-// by Matthew Heironimus
-// 2016-11-24
-//--------------------------------------------------------------------
-
 #include <Joystick.h>
 #include <EEPROM.h>
+
+
+#define USES_ANALOG_STICK (1)
+//#define USES_ANALOG_STICK (0)
+
+#define ANALOG_X_REVERSE (0)
+#define ANALOG_Y_REVERSE (1)
+
+#define MULTICLICK_THRESHOLD_TIME (700)
+
 
 #define KEYPAD_UP     (10)
 #define KEYPAD_DOWN   (16)
@@ -31,30 +24,44 @@
 #define KEYPAD_L1     (6)
 #define KEYPAD_R1     (7)
 #define KEYPAD_FN     (9)
+
+#if USES_ANALOG_STICK
 #define KEYPAD_ANALOG_X     (A2)
 #define KEYPAD_ANALOG_Y     (A3)
+#endif
 
-#define BUTTON_COUNT   (2+4+2)
+#define ARROW_COUNT         (4)
+#define BUTTON_COUNT        (2+4+2)
+#define REAL_BUTTON_COUNT   (ARROW_COUNT + BUTTON_COUNT)
+
+#if USES_ANALOG_STICK
+#define VIRTU_BUTTON_COUNT      (REAL_BUTTON_COUNT * 2)
+#else
+#define VIRTU_BUTTON_COUNT      (ARROW_COUNT + BUTTON_COUNT * 2)
+#endif
 
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
-  BUTTON_COUNT + 4 + BUTTON_COUNT, 0,       // Button Count, Hat Switch Count
+  VIRTU_BUTTON_COUNT,    // Button Count
+  0,                     // Hat Switch Count
   true, true, false,     // X and Y, but no Z Axis
-  true, true, false,   // No Rx, Ry, or Rz
+  false, false, false,   // No Rx, Ry, or Rz
   false, false,          // No rudder or throttle
   false, false, false);  // No accelerator, brake, or steering
 
-int buttonPort[4+BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
+int buttonPort[REAL_BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
                        KEYPAD_START, KEYPAD_SELECT,
                        KEYPAD_A, KEYPAD_B, KEYPAD_X, KEYPAD_Y, 
                        KEYPAD_L1, KEYPAD_R1,
                        KEYPAD_FN};
 // Last state of the buttons
-int lastShiftState[4+BUTTON_COUNT] = {0,};
-int lastButtonState[4+BUTTON_COUNT] = {0,};
+int lastShiftState[REAL_BUTTON_COUNT] = {0,};
+int lastButtonState[REAL_BUTTON_COUNT] = {0,};
 
+#if USES_ANALOG_STICK
 int minX, maxX;
 int minY, maxY;
 int anaCalMode = 0;
+#endif
 
 int fnOldButtonState = 0;
 unsigned long lastFnPushTime = 0;
@@ -63,10 +70,11 @@ int fnMultiClickCount = 0;
 
 void setup() {
   // Initialize Button Pins
-  for (int i = 0; i < (4+BUTTON_COUNT+1); i++){
+  for (int i = 0; i < REAL_BUTTON_COUNT+1; i++){
     pinMode(buttonPort[i], INPUT_PULLUP);
   }
 
+#if USES_ANALOG_STICK
   // read eeprom
   char sig[4];
   for(int i = 0; i < 4; i++){
@@ -83,33 +91,48 @@ void setup() {
     minY = 0;
     maxY = 1023;
   }
+#endif
 
   // Initialize Joystick Library
   Joystick.begin();
+#if USES_ANALOG_STICK
+  Joystick.setXAxisRange(minX, maxX);
+  Joystick.setYAxisRange(minY, maxY);
+#else
   Joystick.setXAxisRange(-1, 1);
   Joystick.setYAxisRange(-1, 1);
-  Joystick.setRxAxisRange(minX, maxX);
-  Joystick.setRyAxisRange(minY, maxY);
+#endif  
 }
 
 
 void loop() {
   int fnButtonState = !digitalRead(KEYPAD_FN);
   unsigned long fnTime = millis();
-  
+
+#if USES_ANALOG_STICK
+#if !ANALOG_X_REVERSE
   int anaX = analogRead(KEYPAD_ANALOG_X);
+#else  
+  int anaX = 1023 - analogRead(KEYPAD_ANALOG_X);
+#endif
+#if !ANALOG_Y_REVERSE
   int anaY = analogRead(KEYPAD_ANALOG_Y);
+#else
+  int anaY = 1023 - analogRead(KEYPAD_ANALOG_Y);
+#endif
+#endif
 
   if(fnButtonState != fnOldButtonState){
+#if USES_ANALOG_STICK
     if(!anaCalMode){
-      if(fnButtonState && (fnTime - lastFnReleaseTime) < 700 && fnMultiClickCount >= 2){
+      if(fnButtonState && (fnTime - lastFnReleaseTime) < MULTICLICK_THRESHOLD_TIME && fnMultiClickCount >= 2){
         minX = maxX = anaX;
         minY = maxY = anaY;
         anaCalMode = 1;
       }
     } else {
-      Joystick.setRxAxisRange(minX, maxX);
-      Joystick.setRyAxisRange(minY, maxY);
+      Joystick.setXAxisRange(minX, maxX);
+      Joystick.setYAxisRange(minY, maxY);
 
       EEPROM.write(0, 'C');
       EEPROM.write(1, 'A');
@@ -126,21 +149,23 @@ void loop() {
       
       anaCalMode = 0;
     }
+#endif
     
     if(fnButtonState){
-      if(fnTime - lastFnReleaseTime < 700){
+      if(fnTime - lastFnReleaseTime < MULTICLICK_THRESHOLD_TIME){
         fnMultiClickCount ++;
       } else {
         fnMultiClickCount = 0;
       }
       lastFnPushTime = fnTime;
     } else {
-      if(fnTime - lastFnPushTime > 700){
+      if(fnTime - lastFnPushTime > MULTICLICK_THRESHOLD_TIME){
         fnMultiClickCount = 0;
       }
       lastFnReleaseTime = fnTime;
     }
     fnOldButtonState = fnButtonState;
+#if USES_ANALOG_STICK
   } else {
     if(anaCalMode) {
       if(anaX < minX) minX = anaX;
@@ -150,16 +175,18 @@ void loop() {
 
       return;
     }
+#endif    
   }
 
   // Read pin values
-  for (int i = 0; i < (4+BUTTON_COUNT); i++)
+  for (int i = 0; i < REAL_BUTTON_COUNT; i++)
   {
     int currentButtonState = !digitalRead(buttonPort[i]);
     if (currentButtonState != lastButtonState[i])
     {
       int idx = -1;
       switch (i) {
+#if !USES_ANALOG_STICK
         case 0: // UP
           if (currentButtonState == 1) {
             if(fnButtonState){
@@ -220,6 +247,12 @@ void loop() {
             }
           }
           break;
+#else
+        case 0: // UP
+        case 1: // DOWN
+        case 2: // LEFT
+        case 3: // RIGHT
+#endif          
         case 4: // START
         case 5: // SELECT
         case 6: // A
@@ -228,18 +261,30 @@ void loop() {
         case 9: // Y
         case 10: // L1
         case 11: // R1
-          idx = i - 4;
+#if USES_ANALOG_STICK
+          idx = i;
+#else
+          idx = i - ARROW_COUNT;
+#endif          
           break;
       }
       
       if(idx >= 0){
         if(currentButtonState){
           if(fnButtonState){
-            if(idx < BUTTON_COUNT) idx += 4+BUTTON_COUNT;
+#if USES_ANALOG_STICK
+            idx += REAL_BUTTON_COUNT;
+#else
+            if(idx < BUTTON_COUNT) idx += ARROW_COUNT+BUTTON_COUNT;
+#endif            
           }
         } else {
           if(lastShiftState[i]){
-            if(idx < BUTTON_COUNT) idx += 4+BUTTON_COUNT;
+#if USES_ANALOG_STICK
+            idx += REAL_BUTTON_COUNT;
+#else
+            if(idx < BUTTON_COUNT) idx += ARROW_COUNT+BUTTON_COUNT;
+#endif            
           }
         }
         Joystick.setButton(idx, currentButtonState);
@@ -250,14 +295,14 @@ void loop() {
     }
   }
 
-  if(true) {
-    if(anaX < minX) anaX = minX;
-    if(anaX > maxX) anaX = maxX;
-    if(anaY < minY) anaY = minY;
-    if(anaY > maxY) anaY = maxY;
-    Joystick.setRxAxis(anaX);
-    Joystick.setRyAxis(anaY);
-  }
+#if USES_ANALOG_STICK
+  if(anaX < minX) anaX = minX;
+  if(anaX > maxX) anaX = maxX;
+  if(anaY < minY) anaY = minY;
+  if(anaY > maxY) anaY = maxY;
+  Joystick.setXAxis(anaX);
+  Joystick.setYAxis(anaY);
+#endif
   
   delay(50);
 }
