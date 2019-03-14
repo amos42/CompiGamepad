@@ -1,12 +1,15 @@
 #include <Joystick.h>
 #include <EEPROM.h>
 
+#define ON  (1)
+#define OFF (0)
 
-#define USES_ANALOG_STICK (1)
-//#define USES_ANALOG_STICK (0)
+#define USES_ANALOG_STICK (ON)
+//#define USES_ANALOG_STICK (OFF)
+#define USES_BATTERY_CHECK (ON)
 
-#define ANALOG_X_REVERSE (0)
-#define ANALOG_Y_REVERSE (1)
+#define ANALOG_X_REVERSE (OFF)
+#define ANALOG_Y_REVERSE (ON)
 
 #define MULTICLICK_THRESHOLD_TIME (700)
 
@@ -16,7 +19,7 @@
 #define KEYPAD_LEFT   (14)
 #define KEYPAD_RIGHT  (15)
 #define KEYPAD_START  (A0)
-#define KEYPAD_SELECT (A1)
+#define KEYPAD_SELECT (8)
 #define KEYPAD_A      (2)
 #define KEYPAD_B      (3)
 #define KEYPAD_X      (4)
@@ -28,6 +31,9 @@
 #if USES_ANALOG_STICK
 #define KEYPAD_ANALOG_X     (A2)
 #define KEYPAD_ANALOG_Y     (A3)
+#endif
+#if USES_BATTERY_CHECK
+#define BATTERY_CHECK       (A1)
 #endif
 
 #define ARROW_COUNT         (4)
@@ -45,7 +51,12 @@ Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
   0,                     // Hat Switch Count
   true, true, false,     // X and Y, but no Z Axis
   false, false, false,   // No Rx, Ry, or Rz
-  false, false,          // No rudder or throttle
+  false,                 // No rudder 
+#if USES_BATTERY_CHECK
+  true,                  // throttle (for battery check)
+#else
+  false,                 // No throttle  
+#endif  
   false, false, false);  // No accelerator, brake, or steering
 
 int buttonPort[REAL_BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
@@ -102,6 +113,9 @@ void setup() {
   Joystick.setXAxisRange(-1, 1);
   Joystick.setYAxisRange(-1, 1);
 #endif  
+#if USES_BATTERY_CHECK
+  Joystick.setThrottleRange(0, 1023);
+#endif
 }
 
 
@@ -120,6 +134,11 @@ void loop() {
 #else
   int anaY = 1023 - analogRead(KEYPAD_ANALOG_Y);
 #endif
+#endif
+
+#if USES_BATTERY_CHECK
+  int batteryLvl = analogRead(BATTERY_CHECK);
+  Joystick.setThrottle(batteryLvl);
 #endif
 
   if(fnButtonState != fnOldButtonState){
