@@ -1,16 +1,18 @@
 #include <Joystick.h>
 #include <EEPROM.h>
 
+
 #define ON  (1)
 #define OFF (0)
 
+
 #define USES_ANALOG_STICK (ON)
-//#define USES_ANALOG_STICK (OFF)
-#define USES_BATTERY_CHECK (ON)
+#define USES_BATTERY_CHECK (OFF)
 
 #define ANALOG_X_REVERSE (OFF)
 #define ANALOG_Y_REVERSE (ON)
 
+#define ANALOG_RETRY_COUNT        (5)
 #define MULTICLICK_THRESHOLD_TIME (700)
 
 
@@ -46,18 +48,22 @@
 #define VIRTU_BUTTON_COUNT      (ARROW_COUNT + BUTTON_COUNT * 2)
 #endif
 
+
+#define ABS(a) (((a) >= 0)? (a) : -(a))
+
+
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
   VIRTU_BUTTON_COUNT,    // Button Count
   0,                     // Hat Switch Count
   true, true, false,     // X and Y, but no Z Axis
   false, false, false,   // No Rx, Ry, or Rz
-  false,                 // No rudder 
+  false,                 // No rudder
 #if USES_BATTERY_CHECK
   true,                  // throttle (for battery check)
 #else
-  false,                 // No throttle  
-#endif  
-  false, false, false);  // No accelerator, brake, or steering
+  false,                 // No throttle
+#endif
+  false, false, false);  // No accelerator, or brake, steering
 
 int buttonPort[REAL_BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
                        KEYPAD_START, KEYPAD_SELECT,
@@ -83,7 +89,23 @@ unsigned long lastFnReleaseTime = 0;
 int fnMultiClickCount = 0;
 
 int analogReadEx(int port) {
-  return analogRead(port);
+  int values[ANALOG_RETRY_COUNT];
+  int sum = 0;
+  for(int i = 0; i < ANALOG_RETRY_COUNT; i++){
+    int v = analogRead(port);
+    values[i] = v;
+    sum += v;
+  }
+  int avg = sum / ANALOG_RETRY_COUNT;
+  int cnt = ANALOG_RETRY_COUNT;
+  for(int i = 0; i < ANALOG_RETRY_COUNT; i++){
+    int v = values[i];
+    if(ABS(v - avg) > 100){
+      sum -= v;
+      cnt --;
+    }
+  }
+  return (cnt > 0) ? sum / cnt : 0;
 }
 
 void setup() {
