@@ -73,11 +73,18 @@ int minX, maxX;
 int minY, maxY;
 int anaCalMode = 0;
 #endif
+#if USES_BATTERY_CHECK
+int oldBatteryLvl = 0;
+#endif
 
 int fnOldButtonState = 0;
 unsigned long lastFnPushTime = 0;
 unsigned long lastFnReleaseTime = 0;
 int fnMultiClickCount = 0;
+
+int analogReadEx(int port) {
+  return analogRead(port);
+}
 
 void setup() {
   // Initialize Button Pins
@@ -125,20 +132,23 @@ void loop() {
 
 #if USES_ANALOG_STICK
 #if !ANALOG_X_REVERSE
-  int anaX = analogRead(KEYPAD_ANALOG_X);
+  int anaX = analogReadEx(KEYPAD_ANALOG_X);
 #else  
-  int anaX = 1023 - analogRead(KEYPAD_ANALOG_X);
+  int anaX = 1023 - analogReadEx(KEYPAD_ANALOG_X);
 #endif
 #if !ANALOG_Y_REVERSE
-  int anaY = analogRead(KEYPAD_ANALOG_Y);
+  int anaY = analogReadEx(KEYPAD_ANALOG_Y);
 #else
-  int anaY = 1023 - analogRead(KEYPAD_ANALOG_Y);
+  int anaY = 1023 - analogReadEx(KEYPAD_ANALOG_Y);
 #endif
 #endif
 
 #if USES_BATTERY_CHECK
-  int batteryLvl = analogRead(BATTERY_CHECK);
-  Joystick.setThrottle(batteryLvl);
+  int batteryLvl = analogReadEx(BATTERY_CHECK);
+  if(batteryLvl != oldBatteryLvl){
+    Joystick.setThrottle(batteryLvl);
+    oldBatteryLvl = batteryLvl;
+  }
 #endif
 
   if(fnButtonState != fnOldButtonState){
