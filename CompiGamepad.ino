@@ -7,7 +7,8 @@
 
 
 #define USES_ANALOG_STICK (ON)
-#define USES_BATTERY_CHECK (OFF)
+#define USES_CMD_SHELL (ON)
+#define USES_BATTERY_CHECK (ON)
 
 #define ANALOG_X_REVERSE (OFF)
 #define ANALOG_Y_REVERSE (ON)
@@ -57,12 +58,7 @@ Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
   0,                     // Hat Switch Count
   true, true, false,     // X and Y, but no Z Axis
   false, false, false,   // No Rx, Ry, or Rz
-  false,                 // No rudder
-#if USES_BATTERY_CHECK
-  true,                  // throttle (for battery check)
-#else
-  false,                 // No throttle
-#endif
+  false, false,          // No rudder or throttle
   false, false, false);  // No accelerator, or brake, steering
 
 int buttonPort[REAL_BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
@@ -79,8 +75,10 @@ int minX, maxX;
 int minY, maxY;
 int anaCalMode = 0;
 #endif
-#if USES_BATTERY_CHECK
-int oldBatteryLvl = 0;
+#if USES_CMD_SHELL
+char cmdBuf[64+1];
+int cmdBufIdx = 0;
+long serialTime = 0;
 #endif
 
 int fnOldButtonState = 0;
@@ -142,8 +140,8 @@ void setup() {
   Joystick.setXAxisRange(-1, 1);
   Joystick.setYAxisRange(-1, 1);
 #endif  
-#if USES_BATTERY_CHECK
-  Joystick.setThrottleRange(0, 1023);
+#if USES_CMD_SHELL
+  Serial.begin(9600);
 #endif
 }
 
@@ -165,11 +163,44 @@ void loop() {
 #endif
 #endif
 
-#if USES_BATTERY_CHECK
-  int batteryLvl = analogReadEx(BATTERY_CHECK);
-  if(batteryLvl != oldBatteryLvl){
-    Joystick.setThrottle(batteryLvl);
-    oldBatteryLvl = batteryLvl;
+#if USES_CMD_SHELL
+  int availCnt = Serial.available();
+  if(availCnt > 0){
+    if(millis() - serialTime > 1000){
+      cmdBufIdx = 0;
+    }
+    
+    while(availCnt > 0){
+      char ch = Serial.read();
+      availCnt--;
+      if(ch == '\n'){
+        cmdBuf[cmdBufIdx] = '\0';
+        cmdBufIdx = 0;
+  
+        String cmdStr = String(cmdBuf);
+        cmdStr.trim();
+        //Serial.println("> input: " + cmdStr);
+        if(cmdStr == "help"){
+          Serial.println("Suc:Help.....");
+        }
+#if USES_BATTERY_CHECK    
+        else if(cmdStr == "battery"){
+          int batteryLvl = analogReadEx(BATTERY_CHECK);
+          float v = batteryLvl * 5 / 1024.0;
+          Serial.print("Suc:"); Serial.println(v, 2);
+        }
+#endif
+        else {
+          Serial.println("Err:Known Command");
+        }
+      } else {
+        if(cmdBufIdx >= 64){
+          cmdBufIdx = 0;
+        }
+        cmdBuf[cmdBufIdx++] = ch;
+      }
+    }
+    serialTime = millis();
   }
 #endif
 
@@ -355,5 +386,5 @@ void loop() {
   Joystick.setYAxis(anaY);
 #endif
   
-  delay(50);
+  delay(10);
 }
