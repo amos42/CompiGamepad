@@ -76,7 +76,8 @@ int minY, maxY;
 int anaCalMode = 0;
 #endif
 #if USES_CMD_SHELL
-char cmdBuf[64+1];
+#define MAX_CMD_LEN 64
+char cmdBuf[MAX_CMD_LEN+1];
 int cmdBufIdx = 0;
 long serialTime = 0;
 #endif
@@ -194,7 +195,7 @@ void loop() {
           Serial.println("Err:Known Command");
         }
       } else {
-        if(cmdBufIdx >= 64){
+        if(cmdBufIdx >= MAX_CMD_LEN){
           cmdBufIdx = 0;
         }
         cmdBuf[cmdBufIdx++] = ch;
