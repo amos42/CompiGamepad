@@ -187,7 +187,7 @@ void loop() {
 #if USES_BATTERY_CHECK    
         else if(cmdStr == "battery"){
           int batteryLvl = analogReadEx(BATTERY_CHECK);
-          float v = batteryLvl * 5 / 1024.0;
+          float v = batteryLvl * 5 / 1023.0;
           Serial.print("Suc:"); Serial.println(v, 2);
         }
 #endif
