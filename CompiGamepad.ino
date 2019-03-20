@@ -5,6 +5,7 @@
 #define ON  (1)
 #define OFF (0)
 
+#define VERSION ("0.1.0")
 
 #define USES_ANALOG_STICK (ON)
 #define USES_CMD_SHELL (ON)
@@ -183,6 +184,8 @@ void loop() {
         //Serial.println("> input: " + cmdStr);
         if(cmdStr == "help"){
           Serial.println("Suc:Help.....");
+        } else if(cmdStr == "version"){
+          Serial.print("Suc:"); Serial.println(VERSION);
         }
 #if USES_BATTERY_CHECK    
         else if(cmdStr == "battery"){
