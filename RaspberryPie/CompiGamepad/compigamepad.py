@@ -83,7 +83,7 @@ while True:
         if status != 25:
             changeicon("25")
             if warning != 1:
-		        if CLIPS == 1:
+                if CLIPS == 1:
                     os.system("/usr/bin/omxplayer --no-osd --layer 999999  " + ICONPATH + "/lowbattalert.mp4 --alpha 160")
                 warning = 1
             status = 25
