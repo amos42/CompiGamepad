@@ -23,4 +23,4 @@ sudo sed -i '1i\\/usr/bin/python /opt/retropie/configs/all/CompiGamepad/compigam
 echo
 echo "Setup Completed. Reboot after 3 Seconds."
 sleep 3
-reboot
+sudo reboot

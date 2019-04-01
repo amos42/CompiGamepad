@@ -77,27 +77,27 @@ while True:
         if status != 0:
             changeicon("0")
             if CLIPS == 1:
-	        os.system("/usr/bin/omxplayer --no-osd --layer 999999  " + ICONPATH + "/lowbattshutdown.mp4 --alpha 160;sudo shutdown -h now")
-        status = 0
+	            os.system("/usr/bin/omxplayer --no-osd --layer 999999  " + ICONPATH + "/lowbattshutdown.mp4 --alpha 160;sudo shutdown -h now")
+            status = 0
     elif ret < VOLT25:
         if status != 25:
             changeicon("25")
             if warning != 1:
-		if CLIPS == 1:
-            os.system("/usr/bin/omxplayer --no-osd --layer 999999  " + ICONPATH + "/lowbattalert.mp4 --alpha 160")
-            warning = 1
-        status = 25
+		        if CLIPS == 1:
+                    os.system("/usr/bin/omxplayer --no-osd --layer 999999  " + ICONPATH + "/lowbattalert.mp4 --alpha 160")
+                warning = 1
+            status = 25
     elif ret < VOLT50:
         if status != 50:
             changeicon("50")
-        status = 50
+            status = 50
     elif ret < VOLT75:
         if status != 75:
             changeicon("75")
-        status = 75
+            status = 75
     else:
         if status != 100:
             changeicon("100")
-        status = 100
+            status = 100
 
     time.sleep(REFRESH_RATE)
