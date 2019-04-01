@@ -14,3 +14,10 @@
 ### Battery Checker circuit <br>
 ![Mini Compi](./screenshot/minicompi_inner2.jpg)
 
+
+
+---
+
+[Installing (Arduino part)](Arduino/README.md)
+
+[Installing (RaspberryPi part)](RaspberryPie/README.md)
