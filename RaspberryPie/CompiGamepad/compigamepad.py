@@ -19,8 +19,6 @@ def changeicon(percent):
     if currentIcon != percent:
         currentIcon = percent
         cmdLine = PNGVIEWPATH + "/pngview -b 0x0000 -l 30000 -x 590 -y 2 " + ICONPATH + "/battery" + percent + ".png &"
-        #cmdLine = PNGVIEWPATH + "/pngvolume -b0x0000 -l30000 -x 590 -y 2 " + ICONPATH + "/volume5.png &"
-        #print(cmdLine)
         #newPngViewProcessPid = int(subprocess.Popen(cmdLine.split(" ")).pid)
         #out = check_output("ps aux | grep [p]ngview | awk '{ print $2 }'", shell=True)
         #for pid in out.split('\n'):
@@ -29,7 +27,6 @@ def changeicon(percent):
         #            print("killing: " + str(pid))
         #        os.system("kill " + pid)
         os.system("sudo killall -9 pngview")
-        #os.system("sudo killall -9 pngvolume")
         os.system(cmdLine)
         if DEBUGMSG == 1:
             print("Changed battery icon to " + percent + "%")
@@ -59,7 +56,7 @@ ser = serial.Serial("/dev/ttyACM0", 9600, timeout=3)
 while True:
     ret = 0
     try:
-        ser.write("battery\n");
+        ser.write("battery\n")
         ser.flush()
         while ser.out_waiting:
             time.sleep(0.01)
