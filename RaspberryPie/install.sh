@@ -1,14 +1,4 @@
 ## install.sh
-# Install      :
-# cd /home/pi
-# git clone https://github.com/rinalim/VolumeJoy
-# cd VolumeJoy
-# chmod 755 install.sh
-# sudo ./install.sh
-#
-# Reference    :
-# https://github.com/RetroPie/RetroPie-Setup/blob/master/scriptmodules/supplementary/runcommand/joy2key.py
-# https://github.com/sana2dang/PauseMode
 
 sudo cp ./libraspidmx.so.1 /usr/lib
 
