@@ -38,6 +38,7 @@
 #endif
 #if USES_BATTERY_CHECK
 #define BATTERY_CHECK       (A1)
+#define BATTERY_MUL         (4.6)  /// on Arduino Pro Micro
 #endif
 
 #define ARROW_COUNT         (4)
@@ -190,7 +191,7 @@ void loop() {
 #if USES_BATTERY_CHECK    
         else if(cmdStr == "battery"){
           int batteryLvl = analogReadEx(BATTERY_CHECK);
-          float v = batteryLvl * 5 / 1023.0;
+          float v = batteryLvl * BATTERY_MUL / (1024.0 - 1);
           Serial.print("Suc:"); Serial.println(v, 2);
         }
 #endif
