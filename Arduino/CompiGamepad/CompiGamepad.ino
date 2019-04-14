@@ -5,9 +5,9 @@
 #define ON  (1)
 #define OFF (0)
 
-#define VERSION ("0.1.0")
+#define VERSION ("0.1.1")
 
-#define USES_ANALOG_STICK (ON)
+#define USES_ANALOG_STICK (OFF)
 #define USES_CMD_SHELL (ON)
 #define USES_BATTERY_CHECK (ON)
 
@@ -18,31 +18,33 @@
 #define MULTICLICK_THRESHOLD_TIME (700)
 
 
-#define KEYPAD_UP     (10)
-#define KEYPAD_DOWN   (16)
-#define KEYPAD_LEFT   (14)
-#define KEYPAD_RIGHT  (15)
-#define KEYPAD_START  (A0)
-#define KEYPAD_SELECT (8)
-#define KEYPAD_A      (2)
-#define KEYPAD_B      (3)
-#define KEYPAD_X      (4)
-#define KEYPAD_Y      (5)
-#define KEYPAD_L1     (6)
-#define KEYPAD_R1     (7)
-#define KEYPAD_FN     (9)
+#define KEYPAD_UP     (9)
+#define KEYPAD_DOWN   (8)
+#define KEYPAD_LEFT   (7)
+#define KEYPAD_RIGHT  (6)
+#define KEYPAD_START  (5)
+#define KEYPAD_SELECT (4)
+#define KEYPAD_A      (3)
+#define KEYPAD_B      (2)
+#define KEYPAD_X      (A2)
+#define KEYPAD_Y      (A1)
+#define KEYPAD_L1     (A0)
+#define KEYPAD_R1     (15)
+#define KEYPAD_L2     (14)
+#define KEYPAD_R2     (16)
+#define KEYPAD_FN     (10)
 
 #if USES_ANALOG_STICK
 #define KEYPAD_ANALOG_X     (A2)
 #define KEYPAD_ANALOG_Y     (A3)
 #endif
 #if USES_BATTERY_CHECK
-#define BATTERY_CHECK       (A1)
+#define BATTERY_CHECK       (A3)
 #define BATTERY_MUL         (4.6)  /// on Arduino Pro Micro
 #endif
 
 #define ARROW_COUNT         (4)
-#define BUTTON_COUNT        (2+4+2)
+#define BUTTON_COUNT        (2+4+2+2)
 #define REAL_BUTTON_COUNT   (ARROW_COUNT + BUTTON_COUNT)
 
 #if USES_ANALOG_STICK
@@ -67,6 +69,7 @@ int buttonPort[REAL_BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYP
                        KEYPAD_START, KEYPAD_SELECT,
                        KEYPAD_A, KEYPAD_B, KEYPAD_X, KEYPAD_Y, 
                        KEYPAD_L1, KEYPAD_R1,
+                       KEYPAD_L2, KEYPAD_R2,
                        KEYPAD_FN};
 // Last state of the buttons
 int lastShiftState[REAL_BUTTON_COUNT] = {0,};
