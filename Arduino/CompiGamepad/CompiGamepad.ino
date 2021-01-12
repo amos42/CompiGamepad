@@ -5,11 +5,16 @@
 #define ON  (1)
 #define OFF (0)
 
-#define VERSION ("0.1.1")
+#define VERSION ("0.2.0")
 
 #define USES_ANALOG_STICK (OFF)
 #define USES_CMD_SHELL (ON)
 #define USES_BATTERY_CHECK (ON)
+
+#define FUNC_KEY_OFF     (0)
+#define FUNC_KEY_FN      (1)
+#define FUNC_KEY_HOTKEY  (2)
+#define FUNC_KEY_MODE FUNC_KEY_HOTKEY
 
 #define ANALOG_X_REVERSE (OFF)
 #define ANALOG_Y_REVERSE (ON)
@@ -18,21 +23,21 @@
 #define MULTICLICK_THRESHOLD_TIME (700)
 
 
-#define KEYPAD_UP     (9)
-#define KEYPAD_DOWN   (8)
-#define KEYPAD_LEFT   (7)
-#define KEYPAD_RIGHT  (6)
-#define KEYPAD_START  (5)
-#define KEYPAD_SELECT (4)
-#define KEYPAD_A      (3)
-#define KEYPAD_B      (2)
-#define KEYPAD_X      (A2)
-#define KEYPAD_Y      (A1)
-#define KEYPAD_L1     (A0)
-#define KEYPAD_R1     (15)
-#define KEYPAD_L2     (14)
-#define KEYPAD_R2     (16)
-#define KEYPAD_FN     (10)
+#define GPIO_KEYPAD_UP     (9)
+#define GPIO_KEYPAD_DOWN   (8)
+#define GPIO_KEYPAD_LEFT   (7)
+#define GPIO_KEYPAD_RIGHT  (6)
+#define GPIO_KEYPAD_START  (5)
+#define GPIO_KEYPAD_SELECT (4)
+#define GPIO_KEYPAD_A      (3)
+#define GPIO_KEYPAD_B      (2)
+#define GPIO_KEYPAD_X      (A2)
+#define GPIO_KEYPAD_Y      (A1)
+#define GPIO_KEYPAD_L1     (A0)
+#define GPIO_KEYPAD_R1     (15)
+#define GPIO_KEYPAD_L2     (14)
+#define GPIO_KEYPAD_R2     (16)
+#define GPIO_KEYPAD_FN     (10)
 
 #if USES_ANALOG_STICK
 #define KEYPAD_ANALOG_X     (A2)
@@ -44,7 +49,11 @@
 #endif
 
 #define ARROW_COUNT         (4)
+#if FUNC_KEY_MODE == FUNC_KEY_HOTKEY
+#define BUTTON_COUNT        (2+4+2+2+1)
+#else
 #define BUTTON_COUNT        (2+4+2+2)
+#endif
 #define REAL_BUTTON_COUNT   (ARROW_COUNT + BUTTON_COUNT)
 
 #if USES_ANALOG_STICK
@@ -65,21 +74,25 @@ Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
   false, false,          // No rudder or throttle
   false, false, false);  // No accelerator, or brake, steering
 
-int buttonPort[REAL_BUTTON_COUNT+1] = {KEYPAD_UP, KEYPAD_DOWN, KEYPAD_LEFT, KEYPAD_RIGHT, 
-                       KEYPAD_START, KEYPAD_SELECT,
-                       KEYPAD_A, KEYPAD_B, KEYPAD_X, KEYPAD_Y, 
-                       KEYPAD_L1, KEYPAD_R1,
-                       KEYPAD_L2, KEYPAD_R2,
-                       KEYPAD_FN};
+int buttonPort[] = {  GPIO_KEYPAD_UP, GPIO_KEYPAD_DOWN, GPIO_KEYPAD_LEFT, GPIO_KEYPAD_RIGHT, 
+                      GPIO_KEYPAD_START, GPIO_KEYPAD_SELECT,
+                      GPIO_KEYPAD_A, GPIO_KEYPAD_B, GPIO_KEYPAD_X, GPIO_KEYPAD_Y, 
+                      GPIO_KEYPAD_L1, GPIO_KEYPAD_R1,
+                      GPIO_KEYPAD_L2, GPIO_KEYPAD_R2,
+                      GPIO_KEYPAD_FN };
+
 // Last state of the buttons
-int lastShiftState[REAL_BUTTON_COUNT] = {0,};
-int lastButtonState[REAL_BUTTON_COUNT] = {0,};
+#if FUNC_KEY_MODE == FUNC_KEY_FN                       
+char lastShiftState[REAL_BUTTON_COUNT] = {0,};
+#endif
+char lastButtonState[REAL_BUTTON_COUNT] = {0,};
 
 #if USES_ANALOG_STICK
 int minX, maxX;
 int minY, maxY;
 int anaCalMode = 0;
 #endif
+
 #if USES_CMD_SHELL
 #define MAX_CMD_LEN 64
 char cmdBuf[MAX_CMD_LEN+1];
@@ -87,12 +100,15 @@ int cmdBufIdx = 0;
 long serialTime = 0;
 #endif
 
+#if FUNC_KEY_MODE == FUNC_KEY_FN                       
 int fnOldButtonState = 0;
 unsigned long lastFnPushTime = 0;
 unsigned long lastFnReleaseTime = 0;
 int fnMultiClickCount = 0;
+#endif
 
-int analogReadEx(int port) {
+int analogReadEx(int port) 
+{
   int values[ANALOG_RETRY_COUNT];
   int sum = 0;
   for(int i = 0; i < ANALOG_RETRY_COUNT; i++){
@@ -112,7 +128,41 @@ int analogReadEx(int port) {
   return (cnt > 0) ? sum / cnt : 0;
 }
 
-void setup() {
+void setButton(int idx, int state)
+{
+#if !USES_ANALOG_STICK
+  switch(idx) {
+    case 0: // UP
+      Joystick.setYAxis(state ? -1 : 0);
+      break;
+    case 1: // DOWN
+      Joystick.setYAxis(state ? 1 : 0);
+      break;
+    case 2 : // LEFT
+      Joystick.setXAxis(state ? -1 : 0);
+      break;
+    case 3 : // RIGHT
+      Joystick.setXAxis(state ? 1 : 0);
+      break;
+    case 4: // START
+    case 5: // SELECT
+    case 6: // A
+    case 7: // B
+    case 8: // X
+    case 9: // Y
+    case 10: // L1
+    case 11: // R1
+    case 12: // HOTKEY
+      Joystick.setButton(idx - ARROW_COUNT, state);
+      break;
+  }
+#else
+    Joystick.setButton(idx, state);
+#endif  
+}
+
+void setup() 
+{
   // Initialize Button Pins
   for (int i = 0; i < REAL_BUTTON_COUNT+1; i++){
     pinMode(buttonPort[i], INPUT_PULLUP);
@@ -153,8 +203,10 @@ void setup() {
 
 
 void loop() {
+#if FUNC_KEY_MODE == FUNC_KEY_FN
   int fnButtonState = !digitalRead(KEYPAD_FN);
   unsigned long fnTime = millis();
+#endif
 
 #if USES_ANALOG_STICK
 #if !ANALOG_X_REVERSE
@@ -212,6 +264,7 @@ void loop() {
   }
 #endif
 
+#if FUNC_KEY_MODE == FUNC_KEY_FN
   if(fnButtonState != fnOldButtonState){
 #if USES_ANALOG_STICK
     if(!anaCalMode){
@@ -240,7 +293,8 @@ void loop() {
       anaCalMode = 0;
     }
 #endif
-    
+
+#if FUNC_KEY_MODE == FUNC_KEY_FN
     if(fnButtonState){
       if(fnTime - lastFnReleaseTime < MULTICLICK_THRESHOLD_TIME){
         fnMultiClickCount ++;
@@ -255,6 +309,8 @@ void loop() {
       lastFnReleaseTime = fnTime;
     }
     fnOldButtonState = fnButtonState;
+#endif
+    
 #if USES_ANALOG_STICK
   } else {
     if(anaCalMode) {
@@ -267,6 +323,7 @@ void loop() {
     }
 #endif    
   }
+#endif
 
   // Read pin values
   for (int i = 0; i < REAL_BUTTON_COUNT; i++)
@@ -278,64 +335,10 @@ void loop() {
       switch (i) {
 #if !USES_ANALOG_STICK
         case 0: // UP
-          if (currentButtonState == 1) {
-            if(fnButtonState){
-              idx = BUTTON_COUNT+0;
-            } else {
-              Joystick.setYAxis(-1);
-            }
-          } else {
-            if(lastShiftState[i]){
-              idx = BUTTON_COUNT+0;
-            } else {
-              Joystick.setYAxis(0);
-            }
-          }
-          break;
         case 1: // DOWN
-          if (currentButtonState == 1) {
-            if(fnButtonState){
-              idx = BUTTON_COUNT+1;
-            } else {
-              Joystick.setYAxis(1);
-            }
-          } else {
-            if(lastShiftState[i]){
-              idx = BUTTON_COUNT+1;
-            } else {
-              Joystick.setYAxis(0);
-            }
-          }
-          break;
         case 2: // LEFT
-          if (currentButtonState == 1) {
-            if(fnButtonState){
-              idx = BUTTON_COUNT+2;
-            } else {
-              Joystick.setXAxis(-1);
-            }
-          } else {
-            if(lastShiftState[i]){
-              idx = BUTTON_COUNT+2;
-            } else {
-              Joystick.setXAxis(0);
-            }
-          }
-          break;
         case 3: // RIGHT
-          if (currentButtonState == 1) {
-            if(fnButtonState){
-              idx = BUTTON_COUNT+3;
-            } else {
-              Joystick.setXAxis(1);
-            }
-          } else {
-            if(lastShiftState[i]){
-              idx = BUTTON_COUNT+3;
-            } else {
-              Joystick.setXAxis(0);
-            }
-          }
+          idx = i;
           break;
 #else
         case 0: // UP
@@ -360,6 +363,7 @@ void loop() {
       }
       
       if(idx >= 0){
+#if FUNC_KEY_MODE == FUNC_KEY_FN                       
         if(currentButtonState){
           if(fnButtonState){
 #if USES_ANALOG_STICK
@@ -377,10 +381,13 @@ void loop() {
 #endif            
           }
         }
-        Joystick.setButton(idx, currentButtonState);
+#endif        
+        setButton(idx, currentButtonState);
       }
-      
+
+#if FUNC_KEY_MODE == FUNC_KEY_FN                       
       lastShiftState[i] = fnButtonState;
+#endif      
       lastButtonState[i] = currentButtonState;
     }
   }
