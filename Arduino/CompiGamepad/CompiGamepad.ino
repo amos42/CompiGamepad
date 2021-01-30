@@ -22,38 +22,38 @@
 #define EXTRA_KEY_MODE         EXTRA_KEY_MODE_HOTKEY
 
 // GPIO 매핑
-#define GPIO_KEYPAD_UP        (9)
-#define GPIO_KEYPAD_DOWN      (8)
-#define GPIO_KEYPAD_LEFT      (7)
-#define GPIO_KEYPAD_RIGHT     (6)
-#define GPIO_KEYPAD_START     (5)
-#define GPIO_KEYPAD_SELECT    (4)
-#define GPIO_KEYPAD_A         (3)
-#define GPIO_KEYPAD_B         (2)
-#define GPIO_KEYPAD_X         (A2)
-#define GPIO_KEYPAD_Y         (A1)
-#define GPIO_KEYPAD_L1        (A0)
+#if USES_ANALOG_STICK
+#define GPIO_KEYPAD_ANALOG_X  (A1)
+#define GPIO_KEYPAD_ANALOG_Y  (A2)
+#else
+#define GPIO_KEYPAD_UP        (A1)
+#define GPIO_KEYPAD_DOWN      (A2)
+#define GPIO_KEYPAD_LEFT      (4)
+#define GPIO_KEYPAD_RIGHT     (5)
+#endif
+#define GPIO_KEYPAD_START     (6)
+#define GPIO_KEYPAD_SELECT    (7)
+#define GPIO_KEYPAD_A         (8)
+#define GPIO_KEYPAD_B         (9)
+#define GPIO_KEYPAD_X         (10)
+#define GPIO_KEYPAD_Y         (16)
+#define GPIO_KEYPAD_L1        (14)
 #define GPIO_KEYPAD_R1        (15)
 #if USES_BUTTON_L2R2
-#define GPIO_KEYPAD_L2        (14)
-#define GPIO_KEYPAD_R2        (16)
+#define GPIO_KEYPAD_L2        (2)
+#define GPIO_KEYPAD_R2        (3)
 #endif
 #if EXTRA_KEY_MODE != EXTRA_KEY_MODE_OFF
-#define GPIO_KEYPAD_EXTRA     (10)
-#endif
-#if USES_ANALOG_STICK
-#define GPIO_KEYPAD_ANALOG_X  (A2)
-#define GPIO_KEYPAD_ANALOG_Y  (A3)
+#define GPIO_KEYPAD_EXTRA     (A3)
 #endif
 #if USES_BATTERY_CHECK
-#define GPIO_BATTERY_CHECK    (A3)
+#define GPIO_BATTERY_CHECK    (A0)
 #endif
 
 #if USES_ANALOG_STICK
 // 아날로그 스틱용 설정
-#define ANALOG_X_REVERSE    (OFF)
-#define ANALOG_Y_REVERSE    (ON)
-
+#define ANALOG_X_REVERSE          (OFF)
+#define ANALOG_Y_REVERSE          (ON)
 #define ANALOG_RETRY_COUNT        (5)
 #define MULTICLICK_THRESHOLD_TIME (700)
 #endif
