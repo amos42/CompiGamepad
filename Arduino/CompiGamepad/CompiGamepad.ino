@@ -87,7 +87,11 @@
 #if EXTRA_KEY_MODE == EXTRA_KEY_MODE_FN
 #define VIRTU_BUTTON_COUNT      (ARROW_COUNT + (BUTTON_COUNT + L2R2_BUTTON_COUNT) * 2)
 #else
+#if USES_ANALOG_STICK
 #define VIRTU_BUTTON_COUNT      (ARROW_COUNT + BUTTON_COUNT + L2R2_BUTTON_COUNT)
+#else
+#define VIRTU_BUTTON_COUNT      (BUTTON_COUNT + L2R2_BUTTON_COUNT)
+#endif
 #endif
 
 #if EXTRA_KEY_MODE == EXTRA_KEY_MODE_FN
@@ -443,6 +447,9 @@ void loop() {
                 case 9: // Y
                 case 10: // L1
                 case 11: // R1
+#if EXTRA_KEY_MODE == EXTRA_KEY_MODE_HOTKEY
+                case 12: // R1
+#endif
 #if USES_ANALOG_STICK
                     idx = i;
 #else
