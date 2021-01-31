@@ -306,6 +306,9 @@ void processCmdShell()
                     Serial.print("Suc:");
                     Serial.print("help");
                     Serial.print(",version");
+#if USES_ANALOG_STICK
+                    Serial.print(",calib");
+#endif
 #if USES_BATTERY_CHECK    
                     Serial.print(",battery");
 #endif
@@ -314,6 +317,18 @@ void processCmdShell()
                 else if (cmdStr == "version") {
                     Serial.print("Suc:"); Serial.println(VERSION);
                 }
+#if USES_ANALOG_STICK
+/* 미구현
+                else if (cmdStr.startWith("calib ")) {
+                    Serial.println("Suc:calib");
+                    minX = 0;
+                    maxX = 1023;
+                    minY = 0;
+                    maxY = 1023;
+                    updateCalibtoEEPROM();
+                }
+*/                
+#endif
 #if USES_BATTERY_CHECK    
                 else if (cmdStr == "battery") {
                     int batteryLvl = analogReadEx(BATTERY_CHECK);
