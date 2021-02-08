@@ -41,19 +41,21 @@ Made by : Amos42
 #define GPIO_KEYPAD_ANALOG_X  (A0)
 #define GPIO_KEYPAD_ANALOG_Y  (A1)
 #else
-#define GPIO_KEYPAD_UP        (10)
-#define GPIO_KEYPAD_DOWN      (16)
-#define GPIO_KEYPAD_LEFT      (14)
-#define GPIO_KEYPAD_RIGHT     (15)
+#define GPIO_KEYPAD_UP        (4)
+#define GPIO_KEYPAD_DOWN      (5)
+#define GPIO_KEYPAD_LEFT      (6)
+#define GPIO_KEYPAD_RIGHT     (7)
 #endif
+
 #define GPIO_KEYPAD_START     (2)
 #define GPIO_KEYPAD_SELECT    (3)
-#define GPIO_KEYPAD_A         (4)
-#define GPIO_KEYPAD_B         (5)
-#define GPIO_KEYPAD_X         (6)
-#define GPIO_KEYPAD_Y         (7)
-#define GPIO_KEYPAD_L1        (8)
-#define GPIO_KEYPAD_R1        (9)
+
+#define GPIO_KEYPAD_A         (8)
+#define GPIO_KEYPAD_B         (9)
+#define GPIO_KEYPAD_X         (10)
+#define GPIO_KEYPAD_Y         (16)
+#define GPIO_KEYPAD_L1        (14)
+#define GPIO_KEYPAD_R1        (15)
 #if USES_BUTTON_L2R2
 #define GPIO_KEYPAD_L2        (A0)
 #define GPIO_KEYPAD_R2        (A1)
