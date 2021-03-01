@@ -101,6 +101,7 @@ int analogReadEx(int port)
 // 버튼 상태 세팅
 void setButton(int id, int idx, int state)
 {
+/*    
     switch (idx) {
         case 0: // UP
             Joysticks[id]->setYAxis(state ? -1 : 0);
@@ -125,6 +126,48 @@ void setButton(int id, int idx, int state)
             Joysticks[id]->setButton(idx - ARROW_COUNT, state);
             break;
     }
+*/  
+    // 월광보합 케이스에 맞는 키배치  
+    int btnIdx = -1;
+    switch (idx) {
+        case 9: // UP
+            Joysticks[id]->setYAxis(state ? -1 : 0);
+            break;
+        case 8: // DOWN
+            Joysticks[id]->setYAxis(state ? 1 : 0);
+            break;
+        case 7: // LEFT
+            Joysticks[id]->setXAxis(state ? -1 : 0);
+            break;
+        case 6: // RIGHT
+            Joysticks[id]->setXAxis(state ? 1 : 0);
+            break;
+        case 10: // START
+            btnIdx = 0;
+            break;
+        case 11: // SELECT
+            btnIdx = 1;
+            break;
+        case 0: // A
+            btnIdx = 2;
+            break;
+        case 1: // B
+            btnIdx = 3;
+            break;
+        case 3: // X
+            btnIdx = 4;
+            break;
+        case 4: // Y
+            btnIdx = 5;
+            break;
+        case 5: // L1
+            btnIdx = 6;
+            break;
+        case 2: // R1
+            btnIdx = 7;
+            break;
+    }
+    if(btnIdx >= 0) Joysticks[id]->setButton(btnIdx, state);
 }
 
 
@@ -243,7 +286,7 @@ void loop() {
             if (currentButtonState != lastButtonState[id][i])
             {
                 setButton(id, i, currentButtonState);
-                
+
                 lastButtonState[id][i] = currentButtonState;
             }
         }
