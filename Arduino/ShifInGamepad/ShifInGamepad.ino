@@ -54,11 +54,9 @@ Made by : Amos42
 
 // 버튼 갯수 관련 상수
 #define ARROW_COUNT         (4)
-
 #define BUTTON_COUNT        (2+4+2)
 
-#define REAL_BUTTON_COUNT   (ARROW_COUNT + BUTTON_COUNT)
-#define VIRTU_BUTTON_COUNT   (REAL_BUTTON_COUNT)
+#define ALL_BUTTON_COUNT   (ARROW_COUNT + BUTTON_COUNT)
 
 // 매크로 함수 선언
 #define ABS(a) (((a) >= 0)? (a) : -(a))
@@ -66,7 +64,7 @@ Made by : Amos42
 Joystick_ *Joysticks[KEYPAD_COUNT];
 
 // Last state of the buttons
-char lastButtonState[KEYPAD_COUNT][REAL_BUTTON_COUNT] = { 0, };
+char lastButtonState[KEYPAD_COUNT][ALL_BUTTON_COUNT] = { 0, };
 
 #if USES_CMD_SHELL
 // Command Shell용 전역변수
@@ -185,6 +183,7 @@ void processCmdShell()
 }
 #endif
 
+
 // 초기화
 void setup()
 {
@@ -197,7 +196,7 @@ void setup()
     for(int i = 0; i < KEYPAD_COUNT; i++)
     {
         Joysticks[i] = new Joystick_(JOYSTICK_DEFAULT_REPORT_ID + i, JOYSTICK_TYPE_GAMEPAD,
-            VIRTU_BUTTON_COUNT,    // Button Count
+            BUTTON_COUNT,          // Button Count
             0,                     // Hat Switch Count
             true, true, false,     // X and Y, but no Z Axis
             false, false, false,   // No Rx, Ry, or Rz
@@ -222,56 +221,29 @@ void loop() {
     processCmdShell();
 #endif
 
-    int values[24];
+    byte values[KEYPAD_COUNT * ALL_BUTTON_COUNT];
     digitalWrite(GPIO_MOSI, LOW);
     delayMicroseconds(PULSE_WIDTH_USEC);
     digitalWrite(GPIO_MOSI, HIGH);
-    for(int i = 0; i < (KEYPAD_COUNT * REAL_BUTTON_COUNT); i++) 
+    for(int i = 0; i < (KEYPAD_COUNT * ALL_BUTTON_COUNT); i++) 
     {
-        values[i] = digitalRead(GPIO_MISO);
+        values[i/8*8 + 7-i%8] = digitalRead(GPIO_MISO);
 
         digitalWrite(GPIO_SCLK, HIGH);
         delayMicroseconds(PULSE_WIDTH_USEC);
         digitalWrite(GPIO_SCLK, LOW);
-
-        //if(i >= 12) Serial.print(values[i]);
     }
-    //Serial.println();
 
     for(int id = 0; id < KEYPAD_COUNT; id++){
-        int stIdx = id * REAL_BUTTON_COUNT;
+        int stIdx = id * ALL_BUTTON_COUNT;
         // Read pin values
-        for (int i = 0; i < REAL_BUTTON_COUNT; i++)
+        for (int i = 0; i < ALL_BUTTON_COUNT; i++)
         {
             int currentButtonState = !values[stIdx + i];
             if (currentButtonState != lastButtonState[id][i])
             {
-                int idx = -1;
-                switch (i) {
-                    case 0: // UP
-                    case 1: // DOWN
-                    case 2: // LEFT
-                    case 3: // RIGHT
-                        idx = i;
-                        break;
-                    case 4: // START
-                    case 5: // SELECT
-                    case 6: // A
-                    case 7: // B
-                    case 8: // X
-                    case 9: // Y
-                    case 10: // L1
-                    case 11: // R1
-                    case 12: // R1
-                        //idx = i - ARROW_COUNT;
-                        idx = i;
-                        break;
-                }
-
-                if (idx >= 0) {
-                    setButton(id, idx, currentButtonState);
-                }
-
+                setButton(id, i, currentButtonState);
+                
                 lastButtonState[id][i] = currentButtonState;
             }
         }
